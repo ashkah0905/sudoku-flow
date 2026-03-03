@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Auto-Solver Screensaver</title>
+    <style>
+        :root {
+            /* 初期値: ライトテーマ (標準的なPC設定に合わせる) */
+            --bg-color: #fcfcfc;
+            --line-color: #333;
+            --text-original: #000;
+            --text-solved: #0056b3;
+            --text-memo: #aaa;
+            --text-warning: #e65100;
+            --text-error: #d32f2f;
+            --highlight-bg: rgba(0, 86, 179, 0.1);
+            --crosshair-bg: rgba(0, 86, 179, 0.08);
+            --focus-bg: rgba(0, 86, 179, 0.2);
+            --cell-solved-bg: rgba(0, 86, 179, 0.03);
+            --flash-color: rgba(0, 86, 179, 0.3); /* ライト用：アクセントの青で色をつける */
+            
+            --cell-size: min(7.5vw, 6.0vh);
+            --border-thick: 3px;
+            --border-thin: 1px;
+            --transition-speed: 0.6s;
+        }
+
+        /* ダークテーマ */
+        body.theme-dark {
+            --bg-color: #000;
+            --line-color: #fff;
+            --text-original: #fff;
+            --text-solved: #00e5ff;
+            --text-memo: #888;
+            --text-warning: #ff3d00;
+            --text-error: #ff1744;
+            --highlight-bg: rgba(0, 229, 255, 0.2);
+            --crosshair-bg: rgba(0, 229, 255, 0.18);
+            --focus-bg: rgba(0, 229, 255, 0.35);
+            --cell-solved-bg: transparent;
+            --flash-color: rgba(255, 255, 255, 0.8);
+        }
+
+        /* セピアテーマ */
+        body.theme-sepia {
+            --bg-color: #f4ecd8;
+            --line-color: #5d4037;
+            --text-original: #3e2723;
+            --text-solved: #006064;
+            --text-memo: #a1887f;
+            --text-warning: #bf360c;
+            --text-error: #d32f2f;
+            --highlight-bg: rgba(93, 64, 55, 0.1);
+            --crosshair-bg: rgba(93, 64, 55, 0.08);
+            --focus-bg: rgba(93, 64, 55, 0.15);
+            --cell-solved-bg: rgba(0, 96, 100, 0.04);
+            --flash-color: rgba(93, 64, 55, 0.3);
+        }
+
+        /* ネオンテーマ */
+        body.theme-neon {
+            --bg-color: #1a0033;
+            --line-color: #ff00ff;
+            --text-original: #fff;
+            --text-solved: #00ffff;
+            --text-memo: #660066;
+            --text-warning: #ffcc00;
+            --text-error: #ff0055;
+            --highlight-bg: rgba(255, 0, 255, 0.15);
+            --crosshair-bg: rgba(0, 255, 255, 0.1);
+            --focus-bg: rgba(255, 0, 255, 0.25);
+            --cell-solved-bg: rgba(0, 255, 255, 0.05);
+            --flash-color: rgba(255, 255, 255, 0.8);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 10px;
+            background-color: var(--bg-color);
+            color: var(--text-original);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        #main-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            height: 100%;
+            justify-content: center;
+        }
+
+        #ui-layer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            width: 100%;
+        }
+
+        #difficulty-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            background: transparent;
+            border: 1px solid #ccc;
+            color: #777;
+            padding: 4px 12px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.7rem;
+            border-radius: 4px;
+        }
+        
+        body.theme-dark .diff-btn, body.theme-neon .diff-btn, body.theme-sepia .diff-btn {
+            border-color: #444;
+        }
+
+        .diff-btn:hover, .diff-btn.active {
+            border-color: var(--text-solved);
+            color: var(--text-solved);
+        }
+
+        .diff-btn.active {
+            background: var(--highlight-bg);
+            font-weight: bold;
+        }
+
+        #board-layout {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #theme-selector {
+            position: absolute;
+            left: calc(100% + 20px);
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .theme-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: 2px solid #666;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .theme-btn:hover { transform: scale(1.15); }
+        .theme-btn.active { 
+            border-color: var(--text-solved);
+            box-shadow: 0 0 10px var(--text-solved);
+        }
+        .theme-light-btn { background: #fff; border-color: #ccc; }
+        .theme-dark-btn { background: #000; }
+        .theme-sepia-btn { background: #f4ecd8; border-color: #5d4037; }
+        .theme-neon-btn { background: linear-gradient(45deg, #1a0033, #ff00ff); }
+
+        #status-panel {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            letter-spacing: 1px;
+            height: 1.4rem;
+            color: var(--text-solved);
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .sudoku-container {
+            position: relative;
+            padding: var(--border-thick);
+            background-color: var(--line-color);
+            box-shadow: 0 0 40px rgba(128, 128, 128, 0.15);
+            line-height: 0;
+            transition: opacity var(--transition-speed) ease;
+        }
+
+        .sudoku-container.fade-out { opacity: 0; }
+
+        .sudoku-board {
+            display: grid;
+            grid-template-columns: repeat(9, var(--cell-size));
+            grid-template-rows: repeat(9, var(--cell-size));
+            background-color: var(--bg-color);
+            gap: 0;
+            transition: background-color var(--transition-speed) ease;
+        }
+
+        .cell {
+            width: var(--cell-size);
+            height: var(--cell-size);
+            border: var(--border-thin) solid rgba(128, 128, 128, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            font-size: calc(var(--cell-size) * 0.62);
+            transition: background-color 0.15s, color 0.15s;
+        }
+
+        .cell.crosshair { background-color: var(--crosshair-bg); }
+        .cell.active-focus { background-color: var(--focus-bg); z-index: 5; box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3); }
+
+        .cell:nth-child(3n) { border-right: var(--border-thick) solid var(--line-color); }
+        .cell:nth-child(9n) { border-right: none; }
+        .cell:nth-child(n+19):nth-child(-n+27),
+        .cell:nth-child(n+46):nth-child(-n+54) { border-bottom: var(--border-thick) solid var(--line-color); }
+        .cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
+
+        .cell.original { color: var(--text-original); font-weight: bold; }
+        
+        .cell.solved { 
+            color: var(--text-solved); 
+            font-weight: bold; 
+            background-color: var(--cell-solved-bg);
+        }
+        
+        .cell.pop-anim { 
+            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .cell.guessed { color: var(--text-warning); font-style: italic; font-weight: bold; }
+        .cell.error { color: var(--text-error); background-color: rgba(255, 23, 68, 0.4) !important; animation: shake 0.3s infinite; }
+
+        @keyframes pop {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-4px); }
+            75% { transform: translateX(4px); }
+        }
+
+        .memo-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            width: 90%;
+            height: 90%;
+            font-size: calc(var(--cell-size) * 0.22);
+            color: var(--text-memo);
+            line-height: 1.1;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .unit-flash { 
+            animation: unit-complete-flash 1s cubic-bezier(0.2, 0, 0.2, 1) forwards !important; 
+            z-index: 15 !important;
+        }
+
+        @keyframes unit-complete-flash {
+            0% { 
+                background-color: var(--flash-color) !important; 
+                box-shadow: inset 0 0 40px var(--flash-color);
+            }
+            100% { 
+                background-color: transparent !important; 
+            }
+        }
+
+        #speed-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(128, 128, 128, 0.08);
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid rgba(128, 128, 128, 0.2);
+            margin-top: 20px;
+        }
+
+        #speed-control label {
+            font-size: 0.65rem;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        #tick-slider {
+            width: 120px;
+            cursor: pointer;
+            accent-color: var(--text-solved);
+        }
+
+        #tick-value {
+            font-size: 0.75rem;
+            color: var(--text-solved);
+            min-width: 55px;
+            font-family: monospace;
+            text-align: right;
+        }
+
+        .completed-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 229, 255, 0.05);
+            display: none;
+            z-index: 20;
+        }
+    </style>
+</head>
+<body class="theme-light">
+
+    <div id="main-wrapper">
+        <div id="ui-layer">
+            <div id="difficulty-selector">
+                <button class="diff-btn active" data-level="EASY">初級</button>
+                <button class="diff-btn" data-level="NORMAL">中級</button>
+                <button class="diff-btn" data-level="HARD">上級</button>
+                <button class="diff-btn" data-level="INSANE">極限</button>
+            </div>
+        </div>
+
+        <div id="status-panel">準備完了</div>
+
+        <div id="board-layout">
+            <div class="sudoku-container" id="board-container">
+                <div class="sudoku-board" id="board"></div>
+                <div class="completed-overlay" id="overlay"></div>
+            </div>
+
+            <div id="theme-selector">
+                <div class="theme-btn theme-light-btn active" data-theme="light" title="ライト"></div>
+                <div class="theme-btn theme-dark-btn" data-theme="dark" title="ダーク"></div>
+                <div class="theme-btn theme-sepia-btn" data-theme="sepia" title="セピア"></div>
+                <div class="theme-btn theme-neon-btn" data-theme="neon" title="ネオン"></div>
+            </div>
+        </div>
+
+        <div id="speed-control">
+            <label for="tick-slider">速度</label>
+            <input type="range" id="tick-slider" min="50" max="5000" step="50" value="2500">
+            <span id="tick-value">2500ms</span>
+        </div>
+    </div>
+
+    <script>
+        const boardElement = document.getElementById('board');
+        const boardContainer = document.getElementById('board-container');
+        const statusElement = document.getElementById('status-panel');
+        const overlay = document.getElementById('overlay');
+        const diffButtons = document.querySelectorAll('.diff-btn');
+        const themeButtons = document.querySelectorAll('.theme-btn');
+        const tickSlider = document.getElementById('tick-slider');
+        const tickValueDisplay = document.getElementById('tick-value');
+        
+        let grid = [];
+        let cells = [];
+        let history = []; 
+        let tickRate = 2500;
+        const BASE_MOVE_SPEED = 60;
+        const MIN_MOVE_SPEED = 5;
+        const MAX_MOVE_SPEED = 350;
+
+        class Cell {
+            constructor(r, c, val = 0) {
+                this.r = r;
+                this.c = c;
+                this.val = val;
+                this.original = val !== 0;
+                this.memos = new Set();
+                this.dom = null;
+                this.isGuessed = false;
+            }
+            clone() {
+                const newCell = new Cell(this.r, this.c, this.val);
+                newCell.original = this.original;
+                newCell.isGuessed = this.isGuessed;
+                newCell.memos = new Set(this.memos);
+                return newCell;
+            }
+        }
+
+        function isValid(g, r, c, v) {
+            for (let i = 0; i < 9; i++) if (g[r][i] === v || g[i][c] === v) return false;
+            const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+            for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (g[br+i][bc+j] === v) return false;
+            return true;
+        }
+
+        function generateFullGrid(g) {
+            for (let r = 0; r < 9; r++) {
+                for (let c = 0; c < 9; c++) {
+                    if (g[r][c] === 0) {
+                        const nums = [1,2,3,4,5,6,7,8,9].sort(() => Math.random() - 0.5);
+                        for (let n of nums) {
+                            if (isValid(g, r, c, n)) {
+                                g[r][c] = n;
+                                if (generateFullGrid(g)) return true;
+                                g[r][c] = 0;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        const App = {
+            difficulty: 'EASY',
+            currentCycleId: 0,
+            focusR: 0,
+            focusC: 0,
+
+            async init() {
+                this.setupDifficultyListeners();
+                this.setupThemeListeners();
+                this.setupTickListener();
+                this.createDOM();
+                this.startCycle();
+            },
+
+            setupDifficultyListeners() {
+                diffButtons.forEach(btn => {
+                    btn.addEventListener('click', async () => {
+                        const level = btn.getAttribute('data-level');
+                        if (this.difficulty === level) return;
+                        this.difficulty = level;
+                        diffButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        await this.restart();
+                    });
+                });
+            },
+
+            setupThemeListeners() {
+                themeButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const theme = btn.getAttribute('data-theme');
+                        document.body.className = `theme-${theme}`;
+                        themeButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                    });
+                });
+            },
+
+            setupTickListener() {
+                tickSlider.addEventListener('input', (e) => {
+                    tickRate = parseInt(e.target.value);
+                    tickValueDisplay.innerText = `${tickRate}ms`;
+                });
+            },
+
+            async restart() {
+                this.currentCycleId++;
+                history = [];
+                this.focusR = 0;
+                this.focusC = 0;
+                
+                boardContainer.classList.add('fade-out');
+                await this.sleep(600, this.currentCycleId);
+                
+                this.createDOM();
+                this.startCycle();
+                
+                boardContainer.classList.remove('fade-out');
+            },
+
+            createDOM() {
+                boardElement.innerHTML = '';
+                cells = [];
+                for (let i = 0; i < 81; i++) {
+                    const d = document.createElement('div');
+                    d.className = 'cell';
+                    boardElement.appendChild(d);
+                    cells.push(d);
+                }
+            },
+
+            setFocus(row, col) {
+                this.focusR = row;
+                this.focusC = col;
+                grid.forEach((rList, r) => {
+                    rList.forEach((cell, c) => {
+                        const dom = cell.dom;
+                        if (!dom) return;
+                        dom.classList.remove('crosshair', 'active-focus');
+                        if (r === row && c === col) {
+                            dom.classList.add('active-focus');
+                        } else if (r === row || c === col) {
+                            dom.classList.add('crosshair');
+                        }
+                    });
+                });
+            },
+
+            async moveTo(targetR, targetC, cycleId) {
+                let currentMoveSpeed = (tickRate / 1000) * BASE_MOVE_SPEED;
+                currentMoveSpeed = Math.max(MIN_MOVE_SPEED, Math.min(MAX_MOVE_SPEED, currentMoveSpeed));
+                
+                while (this.focusC !== targetC) {
+                    if (cycleId !== this.currentCycleId) return false;
+                    const nextC = this.focusC < targetC ? this.focusC + 1 : this.focusC - 1;
+                    this.setFocus(this.focusR, nextC);
+                    if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
+                }
+                while (this.focusR !== targetR) {
+                    if (cycleId !== this.currentCycleId) return false;
+                    const nextR = this.focusR < targetR ? this.focusR + 1 : this.focusR - 1;
+                    this.setFocus(nextR, this.focusC);
+                    if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
+                }
+                return true;
+            },
+
+            async startCycle() {
+                const cycleId = this.currentCycleId;
+                while(cycleId === this.currentCycleId) {
+                    history = [];
+                    if (!await this.generatePuzzle(cycleId)) break;
+                    if (!await this.phaseMemoFill(cycleId)) break;
+                    if (!await this.phaseSolve(cycleId)) break;
+                    await this.phaseComplete(cycleId);
+                    
+                    if (cycleId === this.currentCycleId) {
+                        boardContainer.classList.add('fade-out');
+                        await this.sleep(1000, cycleId);
+                        this.createDOM();
+                        boardContainer.classList.remove('fade-out');
+                        await this.sleep(600, cycleId);
+                    }
+                }
+            },
+
+            async sleep(ms, cycleId) {
+                return new Promise(resolve => {
+                    setTimeout(() => resolve(cycleId === this.currentCycleId), ms);
+                });
+            },
+
+            async generatePuzzle(cycleId) {
+                const diffLabels = { EASY: "初級", NORMAL: "中級", HARD: "上級", INSANE: "極限" };
+                statusElement.innerText = `🏗️ 盤面生成中 [${diffLabels[this.difficulty]}]`;
+                statusElement.style.color = "var(--text-solved)";
+                overlay.style.display = 'none';
+                
+                let rawGrid = Array.from({length: 9}, () => Array(9).fill(0));
+                generateFullGrid(rawGrid);
+                
+                let removeProb = { EASY: 0.45, NORMAL: 0.6, HARD: 0.75, INSANE: 0.88 }[this.difficulty];
+                grid = rawGrid.map((row, r) => row.map((val, c) => {
+                    const isRemoved = Math.random() < removeProb;
+                    return new Cell(r, c, isRemoved ? 0 : val);
+                }));
+
+                this.updateDisplay();
+                this.setFocus(this.focusR, this.focusC);
+                return await this.sleep(1000, cycleId);
+            },
+
+            updateDisplay() {
+                grid.forEach((row, r) => {
+                    row.forEach((cell, c) => {
+                        const dom = cells[r * 9 + c];
+                        cell.dom = dom;
+                        this.renderCellContent(cell);
+                    });
+                });
+            },
+
+            renderCellContent(cell) {
+                const dom = cell.dom;
+                if (!dom) return;
+
+                const classesToKeep = ['crosshair', 'active-focus', 'unit-flash', 'error'];
+                const currentPreservedClasses = Array.from(dom.classList).filter(c => classesToKeep.includes(c));
+                dom.className = 'cell ' + currentPreservedClasses.join(' ');
+
+                if (cell.val !== 0) {
+                    const newText = cell.val.toString();
+                    if (dom.innerHTML.includes('memo-grid') || dom.innerText !== newText) {
+                        dom.innerText = newText;
+                        if (!cell.original) {
+                            dom.classList.add('pop-anim');
+                            setTimeout(() => dom.classList.remove('pop-anim'), 400);
+                        }
+                    }
+                    if (cell.original) dom.classList.add('original');
+                    else dom.classList.add('solved');
+                    if (cell.isGuessed) dom.classList.add('guessed');
+                } else {
+                    this.renderMemos(cell);
+                }
+            },
+
+            async phaseMemoFill(cycleId) {
+                statusElement.innerText = "✍️ 候補数字を記入中...";
+                for (let r = 0; r < 9; r++) {
+                    const isReverse = (r % 2 !== 0);
+                    for (let i = 0; i < 9; i++) {
+                        if (cycleId !== this.currentCycleId) return false;
+                        const c = isReverse ? (8 - i) : i;
+                        const cell = grid[r][c];
+                        if (cell.val === 0) {
+                            if (!await this.moveTo(r, c, cycleId)) return false;
+                            cell.dom.classList.add('highlight-action');
+                            for (let n = 1; n <= 9; n++) {
+                                if (this.canPlace(r, c, n)) cell.memos.add(n);
+                            }
+                            this.renderMemos(cell);
+                            const memoDelay = Math.max(2, Math.min(20, tickRate / 50));
+                            if (!await this.sleep(memoDelay, cycleId)) return false;
+                            cell.dom.classList.remove('highlight-action');
+                        }
+                    }
+                }
+                return true;
+            },
+
+            renderMemos(cell) {
+                if (cell.val !== 0) return;
+                let html = '<div class="memo-grid">';
+                for (let i = 1; i <= 9; i++) {
+                    html += `<div>${cell.memos.has(i) ? i : ''}</div>`;
+                }
+                html += '</div>';
+                if (cell.dom.innerHTML !== html) {
+                    cell.dom.innerHTML = html;
+                }
+            },
+
+            canPlace(r, c, v) {
+                for (let i = 0; i < 9; i++) if (grid[r][i].val === v || grid[i][c].val === v) return false;
+                const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+                for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) if (grid[br+i][bc+j].val === v) return false;
+                return true;
+            },
+
+            async phaseSolve(cycleId) {
+                while (!this.isAllFilled()) {
+                    if (cycleId !== this.currentCycleId) return false;
+                    const action = this.findNextAction();
+                    if (action.cell) {
+                        if (!await this.moveTo(action.cell.r, action.cell.c, cycleId)) return false;
+                    }
+                    if (action.type === 'CONTRADICTION') {
+                        if (!await this.backtrack(action.cell, cycleId)) return true;
+                    } else if (action.type === 'GUESS') {
+                        statusElement.innerText = "🧠 仮説検証中 (分岐点を作成)...";
+                        statusElement.style.color = "var(--text-warning)";
+                        this.saveHistory(action.cell, action.val);
+                        await this.confirmCell(action.cell, action.val, true);
+                    } else if (action.type === 'CONFIRM') {
+                        statusElement.innerText = "🔍 解析中...";
+                        statusElement.style.color = "var(--text-solved)";
+                        await this.confirmCell(action.cell, action.val, false);
+                    }
+                    if (!await this.sleep(tickRate, cycleId)) return false;
+                }
+                this.clearFocus();
+                return true;
+            },
+
+            findNextAction() {
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        const cell = grid[r][c];
+                        if (cell.val === 0 && cell.memos.size === 0) return { type: 'CONTRADICTION', cell };
+                    }
+                }
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) {
+                        const cell = grid[r][c];
+                        if (cell.val === 0 && cell.memos.size === 1) return { type: 'CONFIRM', cell, val: [...cell.memos][0] };
+                    }
+                }
+                let best = null;
+                for (let r = 0; r < 9; r++) for (let c = 0; c < 9; c++) {
+                    const cell = grid[r][c];
+                    if (cell.val === 0 && cell.memos.size > 0) {
+                        if (!best || cell.memos.size < best.memos.size) best = cell;
+                    }
+                }
+                if (best) {
+                    const candidates = [...best.memos];
+                    const randomVal = candidates[Math.floor(Math.random() * candidates.length)];
+                    return { type: 'GUESS', cell: best, val: randomVal };
+                }
+                return { type: 'CONTRADICTION', cell: null };
+            },
+
+            saveHistory(cell, val) {
+                const snapshot = grid.map(row => row.map(c => c.clone()));
+                history.push({ 
+                    gridState: snapshot, 
+                    cellCoord: { r: cell.r, c: cell.c }, 
+                    failedVal: val 
+                });
+            },
+
+            async backtrack(errorCell, cycleId) {
+                if (errorCell) errorCell.dom.classList.add('error');
+                statusElement.innerText = "⚠️ 矛盾検知！やり直します";
+                statusElement.style.color = "var(--text-error)";
+                if (!await this.sleep(Math.max(500, tickRate), cycleId)) return false;
+                if (errorCell) errorCell.dom.classList.remove('error');
+                if (history.length === 0) {
+                    statusElement.innerText = "♻️ 解決不能。再生成します...";
+                    await this.sleep(1500, cycleId);
+                    await this.restart();
+                    return false;
+                }
+                statusElement.innerText = "⏪ 巻き戻し中...";
+                statusElement.style.color = "var(--text-warning)";
+                const lastState = history.pop();
+                grid = lastState.gridState.map(row => row.map(c => c.clone()));
+                const targetCell = grid[lastState.cellCoord.r][lastState.cellCoord.c];
+                targetCell.memos.delete(lastState.failedVal);
+                this.updateDisplay();
+                if (!await this.moveTo(targetCell.r, targetCell.c, cycleId)) return false;
+                this.flashUnit([targetCell.dom]); 
+                await this.sleep(600, cycleId);
+                return true;
+            },
+
+            async confirmCell(cell, val, isGuess) {
+                cell.val = val;
+                cell.isGuessed = isGuess;
+                cell.memos.clear();
+                this.renderCellContent(cell);
+                this.checkUnitCompletions(cell.r, cell.c);
+                this.updateRelatedMemos(cell.r, cell.c, val);
+            },
+
+            checkUnitCompletions(r, c) {
+                const row = grid[r];
+                if (row.every(cell => cell.val !== 0)) this.flashUnit(row.map(cell => cell.dom));
+                const col = [];
+                for (let i = 0; i < 9; i++) col.push(grid[i][c]);
+                if (col.every(cell => cell.val !== 0)) this.flashUnit(col.map(cell => cell.dom));
+                const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+                const region = [];
+                for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) region.push(grid[br+i][bc+j]);
+                if (region.every(cell => cell.val !== 0)) this.flashUnit(region.map(cell => cell.dom));
+            },
+
+            flashUnit(doms) {
+                doms.forEach(dom => {
+                    if (!dom) return;
+                    dom.classList.remove('unit-flash');
+                    void dom.offsetWidth; 
+                    dom.classList.add('unit-flash');
+                    setTimeout(() => dom.classList.remove('unit-flash'), 1000);
+                });
+            },
+
+            updateRelatedMemos(r, c, val) {
+                for (let i = 0; i < 9; i++) {
+                    this.removeMemo(grid[r][i], val);
+                    this.removeMemo(grid[i][c], val);
+                }
+                const br = Math.floor(r / 3) * 3, bc = Math.floor(c / 3) * 3;
+                for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) this.removeMemo(grid[br+i][bc+j], val);
+            },
+
+            removeMemo(cell, val) {
+                if (cell.val === 0 && cell.memos.has(val)) {
+                    cell.memos.delete(val);
+                    this.renderMemos(cell);
+                }
+            },
+
+            isAllFilled() {
+                return grid.every(row => row.every(cell => cell.val !== 0));
+            },
+
+            clearFocus() {
+                grid.forEach(rList => rList.forEach(cell => {
+                    if (cell.dom) cell.dom.classList.remove('crosshair', 'active-focus');
+                }));
+            },
+
+            async phaseComplete(cycleId) {
+                if (!this.isAllFilled()) return; 
+                this.clearFocus();
+                overlay.style.display = 'block';
+                for (let i = 5; i > 0; i--) {
+                    if (cycleId !== this.currentCycleId) return;
+                    statusElement.innerText = `🎉 完成しました！ 次の面まで ${i}...`;
+                    statusElement.style.color = "var(--text-solved)";
+                    if (!await this.sleep(1000, cycleId)) return;
+                }
+            }
+        };
+
+        window.onload = () => App.init();
+    </script>
+</body>
+</html>
