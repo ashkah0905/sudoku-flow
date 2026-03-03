@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sudoku Auto-Solver Screensaver</title>
+    <title>SUDOKU FLOW</title>
     <style>
         :root {
-            /* 初期値: ライトテーマ (標準的なPC設定に合わせる) */
+            /* Default: Light Theme */
             --bg-color: #fcfcfc;
             --line-color: #333;
             --text-original: #000;
@@ -18,15 +18,15 @@
             --crosshair-bg: rgba(0, 86, 179, 0.08);
             --focus-bg: rgba(0, 86, 179, 0.2);
             --cell-solved-bg: rgba(0, 86, 179, 0.03);
-            --flash-color: rgba(0, 86, 179, 0.3); /* ライト用：アクセントの青で色をつける */
+            --flash-color: rgba(0, 86, 179, 0.3);
             
-            --cell-size: min(7.5vw, 6.0vh);
+            --cell-size: min(7.5vw, 6.2vh);
             --border-thick: 3px;
             --border-thin: 1px;
             --transition-speed: 0.6s;
         }
 
-        /* ダークテーマ */
+        /* Dark Theme */
         body.theme-dark {
             --bg-color: #000;
             --line-color: #fff;
@@ -42,7 +42,7 @@
             --flash-color: rgba(255, 255, 255, 0.8);
         }
 
-        /* セピアテーマ */
+        /* Sepia Theme */
         body.theme-sepia {
             --bg-color: #f4ecd8;
             --line-color: #5d4037;
@@ -58,7 +58,7 @@
             --flash-color: rgba(93, 64, 55, 0.3);
         }
 
-        /* ネオンテーマ */
+        /* Neon Theme */
         body.theme-neon {
             --bg-color: #1a0033;
             --line-color: #ff00ff;
@@ -81,7 +81,7 @@
             padding: 10px;
             background-color: var(--bg-color);
             color: var(--text-original);
-            font-family: 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -104,9 +104,20 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 12px;
+            margin-bottom: 24px;
             width: 100%;
+        }
+
+        #app-header h1 {
+            margin: 0;
+            font-size: 2.2rem;
+            font-weight: 200;
+            letter-spacing: 0.35em;
+            text-transform: uppercase;
+            color: var(--text-original);
+            opacity: 0.9;
+            text-indent: 0.35em; 
         }
 
         #difficulty-selector {
@@ -118,19 +129,20 @@
 
         .diff-btn {
             background: transparent;
-            border: 1px solid #ccc;
+            border: 1px solid rgba(128, 128, 128, 0.3);
             color: #777;
-            padding: 4px 12px;
+            padding: 4px 14px;
             cursor: pointer;
             font-family: inherit;
             transition: all 0.3s;
             text-transform: uppercase;
-            font-size: 0.7rem;
-            border-radius: 4px;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+            border-radius: 2px;
         }
         
         body.theme-dark .diff-btn, body.theme-neon .diff-btn, body.theme-sepia .diff-btn {
-            border-color: #444;
+            border-color: rgba(255, 255, 255, 0.15);
         }
 
         .diff-btn:hover, .diff-btn.active {
@@ -152,19 +164,19 @@
 
         #theme-selector {
             position: absolute;
-            left: calc(100% + 20px);
+            left: calc(100% + 24px);
             top: 50%;
             transform: translateY(-50%);
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 14px;
         }
 
         .theme-btn {
-            width: 28px;
-            height: 28px;
+            width: 26px;
+            height: 26px;
             border-radius: 50%;
-            border: 2px solid #666;
+            border: 2px solid #888;
             cursor: pointer;
             transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
@@ -172,20 +184,20 @@
         .theme-btn:hover { transform: scale(1.15); }
         .theme-btn.active { 
             border-color: var(--text-solved);
-            box-shadow: 0 0 10px var(--text-solved);
+            box-shadow: 0 0 12px var(--text-solved);
         }
-        .theme-light-btn { background: #fff; border-color: #ccc; }
+        .theme-light-btn { background: #fff; border-color: #ddd; }
         .theme-dark-btn { background: #000; }
         .theme-sepia-btn { background: #f4ecd8; border-color: #5d4037; }
         .theme-neon-btn { background: linear-gradient(45deg, #1a0033, #ff00ff); }
 
         #status-panel {
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            height: 1.4rem;
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+            letter-spacing: 1.5px;
+            height: 1.5rem;
             color: var(--text-solved);
-            font-weight: bold;
+            font-weight: 300;
             text-align: center;
         }
 
@@ -193,7 +205,7 @@
             position: relative;
             padding: var(--border-thick);
             background-color: var(--line-color);
-            box-shadow: 0 0 40px rgba(128, 128, 128, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             line-height: 0;
             transition: opacity var(--transition-speed) ease;
         }
@@ -212,18 +224,22 @@
         .cell {
             width: var(--cell-size);
             height: var(--cell-size);
-            border: var(--border-thin) solid rgba(128, 128, 128, 0.2);
+            border: var(--border-thin) solid rgba(128, 128, 128, 0.15);
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
             font-size: calc(var(--cell-size) * 0.62);
             transition: background-color 0.15s, color 0.15s;
+            /* Reduced padding to maximize internal space for candidates */
+            padding: 2px;
+            overflow: visible;
         }
 
         .cell.crosshair { background-color: var(--crosshair-bg); }
-        .cell.active-focus { background-color: var(--focus-bg); z-index: 5; box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.3); }
+        .cell.active-focus { background-color: var(--focus-bg); z-index: 5; box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.2); }
 
+        /* Borders */
         .cell:nth-child(3n) { border-right: var(--border-thick) solid var(--line-color); }
         .cell:nth-child(9n) { border-right: none; }
         .cell:nth-child(n+19):nth-child(-n+27),
@@ -259,17 +275,22 @@
         .memo-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            width: 90%;
-            height: 90%;
-            font-size: calc(var(--cell-size) * 0.22);
+            grid-template-rows: repeat(3, 1fr);
+            /* Occupy 100% of the padded cell area */
+            width: 100%;
+            height: 100%;
+            margin: auto;
+            font-size: calc(var(--cell-size) * 0.2);
             color: var(--text-memo);
-            line-height: 1.1;
+            line-height: 1;
             text-align: center;
             pointer-events: none;
+            align-items: center;
+            justify-items: center;
         }
 
         .unit-flash { 
-            animation: unit-complete-flash 1s cubic-bezier(0.2, 0, 0.2, 1) forwards !important; 
+            animation: unit-complete-flash 0.8s cubic-bezier(0.2, 0, 0.2, 1) forwards !important; 
             z-index: 15 !important;
         }
 
@@ -286,22 +307,23 @@
         #speed-control {
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: rgba(128, 128, 128, 0.08);
-            padding: 6px 16px;
+            gap: 12px;
+            background: rgba(128, 128, 128, 0.06);
+            padding: 8px 20px;
             border-radius: 30px;
-            border: 1px solid rgba(128, 128, 128, 0.2);
-            margin-top: 20px;
+            border: 1px solid rgba(128, 128, 128, 0.1);
+            margin-top: 24px;
         }
 
         #speed-control label {
-            font-size: 0.65rem;
-            color: #666;
+            font-size: 0.6rem;
+            color: #888;
             text-transform: uppercase;
+            letter-spacing: 1.5px;
         }
 
         #tick-slider {
-            width: 120px;
+            width: 130px;
             cursor: pointer;
             accent-color: var(--text-solved);
         }
@@ -312,6 +334,7 @@
             min-width: 55px;
             font-family: monospace;
             text-align: right;
+            opacity: 0.8;
         }
 
         .completed-overlay {
@@ -327,15 +350,18 @@
 
     <div id="main-wrapper">
         <div id="ui-layer">
+            <div id="app-header">
+                <h1>SUDOKU FLOW</h1>
+            </div>
             <div id="difficulty-selector">
-                <button class="diff-btn active" data-level="EASY">初級</button>
-                <button class="diff-btn" data-level="NORMAL">中級</button>
-                <button class="diff-btn" data-level="HARD">上級</button>
-                <button class="diff-btn" data-level="INSANE">極限</button>
+                <button class="diff-btn active" data-level="EASY">Easy</button>
+                <button class="diff-btn" data-level="NORMAL">Normal</button>
+                <button class="diff-btn" data-level="HARD">Hard</button>
+                <button class="diff-btn" data-level="INSANE">Insane</button>
             </div>
         </div>
 
-        <div id="status-panel">準備完了</div>
+        <div id="status-panel">Ready</div>
 
         <div id="board-layout">
             <div class="sudoku-container" id="board-container">
@@ -344,15 +370,15 @@
             </div>
 
             <div id="theme-selector">
-                <div class="theme-btn theme-light-btn active" data-theme="light" title="ライト"></div>
-                <div class="theme-btn theme-dark-btn" data-theme="dark" title="ダーク"></div>
-                <div class="theme-btn theme-sepia-btn" data-theme="sepia" title="セピア"></div>
-                <div class="theme-btn theme-neon-btn" data-theme="neon" title="ネオン"></div>
+                <div class="theme-btn theme-light-btn active" data-theme="light" title="Light"></div>
+                <div class="theme-btn theme-dark-btn" data-theme="dark" title="Dark"></div>
+                <div class="theme-btn theme-sepia-btn" data-theme="sepia" title="Sepia"></div>
+                <div class="theme-btn theme-neon-btn" data-theme="neon" title="Neon"></div>
             </div>
         </div>
 
         <div id="speed-control">
-            <label for="tick-slider">速度</label>
+            <label for="tick-slider">Speed</label>
             <input type="range" id="tick-slider" min="50" max="5000" step="50" value="2500">
             <span id="tick-value">2500ms</span>
         </div>
@@ -554,8 +580,8 @@
             },
 
             async generatePuzzle(cycleId) {
-                const diffLabels = { EASY: "初級", NORMAL: "中級", HARD: "上級", INSANE: "極限" };
-                statusElement.innerText = `🏗️ 盤面生成中 [${diffLabels[this.difficulty]}]`;
+                const diffLabels = { EASY: "EASY", NORMAL: "NORMAL", HARD: "HARD", INSANE: "INSANE" };
+                statusElement.innerText = `🏗️ Generating Board [${diffLabels[this.difficulty]}]`;
                 statusElement.style.color = "var(--text-solved)";
                 overlay.style.display = 'none';
                 
@@ -609,7 +635,7 @@
             },
 
             async phaseMemoFill(cycleId) {
-                statusElement.innerText = "✍️ 候補数字を記入中...";
+                statusElement.innerText = "✍️ Filling Candidates...";
                 for (let r = 0; r < 9; r++) {
                     const isReverse = (r % 2 !== 0);
                     for (let i = 0; i < 9; i++) {
@@ -661,12 +687,12 @@
                     if (action.type === 'CONTRADICTION') {
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
-                        statusElement.innerText = "🧠 仮説検証中 (分岐点を作成)...";
+                        statusElement.innerText = "🧠 Verifying Hypothesis...";
                         statusElement.style.color = "var(--text-warning)";
                         this.saveHistory(action.cell, action.val);
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
-                        statusElement.innerText = "🔍 解析中...";
+                        statusElement.innerText = "🔍 Analyzing...";
                         statusElement.style.color = "var(--text-solved)";
                         await this.confirmCell(action.cell, action.val, false);
                     }
@@ -715,17 +741,17 @@
 
             async backtrack(errorCell, cycleId) {
                 if (errorCell) errorCell.dom.classList.add('error');
-                statusElement.innerText = "⚠️ 矛盾検知！やり直します";
+                statusElement.innerText = "⚠️ Contradiction Detected! Retrying";
                 statusElement.style.color = "var(--text-error)";
                 if (!await this.sleep(Math.max(500, tickRate), cycleId)) return false;
                 if (errorCell) errorCell.dom.classList.remove('error');
                 if (history.length === 0) {
-                    statusElement.innerText = "♻️ 解決不能。再生成します...";
+                    statusElement.innerText = "♻️ Solving failed. Regenerating...";
                     await this.sleep(1500, cycleId);
                     await this.restart();
                     return false;
                 }
-                statusElement.innerText = "⏪ 巻き戻し中...";
+                statusElement.innerText = "⏪ Backtracking...";
                 statusElement.style.color = "var(--text-warning)";
                 const lastState = history.pop();
                 grid = lastState.gridState.map(row => row.map(c => c.clone()));
@@ -801,7 +827,7 @@
                 overlay.style.display = 'block';
                 for (let i = 5; i > 0; i--) {
                     if (cycleId !== this.currentCycleId) return;
-                    statusElement.innerText = `🎉 完成しました！ 次の面まで ${i}...`;
+                    statusElement.innerText = `🎉 Completed! Next board in ${i}...`;
                     statusElement.style.color = "var(--text-solved)";
                     if (!await this.sleep(1000, cycleId)) return;
                 }
