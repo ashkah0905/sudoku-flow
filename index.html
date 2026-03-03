@@ -17,7 +17,6 @@
             --highlight-bg: rgba(0, 86, 179, 0.1);
             --crosshair-bg: rgba(0, 86, 179, 0.08);
             --focus-bg: rgba(0, 86, 179, 0.2);
-            --cell-solved-bg: rgba(0, 86, 179, 0.03);
             --flash-color: rgba(0, 86, 179, 0.3);
             
             --cell-size: min(7.5vw, 6.2vh);
@@ -38,7 +37,6 @@
             --highlight-bg: rgba(0, 229, 255, 0.2);
             --crosshair-bg: rgba(0, 229, 255, 0.18);
             --focus-bg: rgba(0, 229, 255, 0.35);
-            --cell-solved-bg: transparent;
             --flash-color: rgba(255, 255, 255, 0.8);
         }
 
@@ -54,7 +52,6 @@
             --highlight-bg: rgba(93, 64, 55, 0.1);
             --crosshair-bg: rgba(93, 64, 55, 0.08);
             --focus-bg: rgba(93, 64, 55, 0.15);
-            --cell-solved-bg: rgba(0, 96, 100, 0.04);
             --flash-color: rgba(93, 64, 55, 0.3);
         }
 
@@ -70,7 +67,6 @@
             --highlight-bg: rgba(255, 0, 255, 0.15);
             --crosshair-bg: rgba(0, 255, 255, 0.1);
             --focus-bg: rgba(255, 0, 255, 0.25);
-            --cell-solved-bg: rgba(0, 255, 255, 0.05);
             --flash-color: rgba(255, 255, 255, 0.8);
         }
 
@@ -251,7 +247,7 @@
         .cell.solved { 
             color: var(--text-solved); 
             font-weight: bold; 
-            background-color: var(--cell-solved-bg);
+            background-color: transparent;
         }
         
         .cell.pop-anim { 
