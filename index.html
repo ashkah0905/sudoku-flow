@@ -66,7 +66,7 @@
             --text-error: #ff0055;
             --highlight-bg: rgba(255, 0, 255, 0.15);
             --crosshair-bg: rgba(0, 255, 255, 0.1);
-            --focus-bg: rgba(255, 0, 255, 0.25);
+            --focus-bg: rgba(0, 255, 255, 0.25);
             --flash-color: rgba(255, 255, 255, 0.8);
         }
 
@@ -118,7 +118,7 @@
 
         #difficulty-selector {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -127,13 +127,13 @@
             background: transparent;
             border: 1px solid rgba(128, 128, 128, 0.3);
             color: #777;
-            padding: 4px 14px;
+            padding: 6px 20px;
             cursor: pointer;
             font-family: inherit;
             transition: all 0.3s;
             text-transform: uppercase;
-            font-size: 0.65rem;
-            letter-spacing: 1px;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
             border-radius: 2px;
         }
         
@@ -347,10 +347,8 @@
                 <h1>SUDOKU FLOW</h1>
             </div>
             <div id="difficulty-selector">
-                <button class="diff-btn active" data-level="EASY">Easy</button>
-                <button class="diff-btn" data-level="NORMAL">Normal</button>
-                <button class="diff-btn" data-level="HARD">Hard</button>
-                <button class="diff-btn" data-level="INSANE">Insane</button>
+                <button class="diff-btn active" data-level="CALM">Calm</button>
+                <button class="diff-btn" data-level="CHAOS">Chaos</button>
             </div>
         </div>
 
@@ -441,7 +439,7 @@
         }
 
         const App = {
-            difficulty: 'EASY',
+            difficulty: 'CALM',
             currentCycleId: 0,
             focusR: 0,
             focusC: 0,
@@ -573,7 +571,7 @@
             },
 
             async generatePuzzle(cycleId) {
-                const diffLabels = { EASY: "EASY", NORMAL: "NORMAL", HARD: "HARD", INSANE: "INSANE" };
+                const diffLabels = { CALM: "CALM", CHAOS: "CHAOS" };
                 statusElement.innerText = `🏗️ Generating Board [${diffLabels[this.difficulty]}]`;
                 statusElement.style.color = "var(--text-solved)";
                 overlay.style.display = 'none';
@@ -581,7 +579,8 @@
                 let rawGrid = Array.from({length: 9}, () => Array(9).fill(0));
                 generateFullGrid(rawGrid);
                 
-                let removeProb = { EASY: 0.45, NORMAL: 0.6, HARD: 0.75, INSANE: 0.88 }[this.difficulty];
+                // CALM uses EASY logic (0.45), CHAOS uses INSANE logic (0.88)
+                let removeProb = { CALM: 0.45, CHAOS: 0.88 }[this.difficulty];
                 grid = rawGrid.map((row, r) => row.map((val, c) => {
                     const isRemoved = Math.random() < removeProb;
                     return new Cell(r, c, isRemoved ? 0 : val);
