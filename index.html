@@ -52,7 +52,7 @@
             --highlight-bg: rgba(93, 64, 55, 0.1);
             --crosshair-bg: rgba(93, 64, 55, 0.08);
             --focus-bg: rgba(93, 64, 55, 0.15);
-            --flash-color: rgba(93, 64, 55, 0.3);
+            --flash-color: rgba(93, 65, 55, 0.3);
         }
 
         /* Neon Theme */
@@ -227,13 +227,10 @@
             position: relative;
             font-size: calc(var(--cell-size) * 0.62);
             transition: background-color 0.15s, color 0.15s;
-            /* Reduced padding to maximize internal space for candidates */
             padding: 2px;
             overflow: visible;
+            background-color: transparent;
         }
-
-        .cell.crosshair { background-color: var(--crosshair-bg); }
-        .cell.active-focus { background-color: var(--focus-bg); z-index: 5; box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.2); }
 
         /* Borders */
         .cell:nth-child(3n) { border-right: var(--border-thick) solid var(--line-color); }
@@ -243,19 +240,13 @@
         .cell:nth-child(n+73):nth-child(-n+81) { border-bottom: none; }
 
         .cell.original { color: var(--text-original); font-weight: bold; }
-        
-        .cell.solved { 
-            color: var(--text-solved); 
-            font-weight: bold; 
-            background-color: transparent;
-        }
-        
-        .cell.pop-anim { 
-            animation: pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-
+        .cell.solved { color: var(--text-solved); font-weight: bold; }
         .cell.guessed { color: var(--text-warning); font-style: italic; font-weight: bold; }
         .cell.error { color: var(--text-error); background-color: rgba(255, 23, 68, 0.4) !important; animation: shake 0.3s infinite; }
+
+        /* UI Interaction States (Should override cell backgrounds) */
+        .cell.crosshair { background-color: var(--crosshair-bg) !important; }
+        .cell.active-focus { background-color: var(--focus-bg) !important; z-index: 5; box-shadow: inset 0 0 10px rgba(0, 229, 255, 0.2); }
 
         @keyframes pop {
             0% { transform: scale(0.5); opacity: 0; }
@@ -272,7 +263,6 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             grid-template-rows: repeat(3, 1fr);
-            /* Occupy 100% of the padded cell area */
             width: 100%;
             height: 100%;
             margin: auto;
@@ -336,7 +326,7 @@
         .completed-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 229, 255, 0.05);
+            background: transparent;
             display: none;
             z-index: 20;
         }
