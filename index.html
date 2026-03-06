@@ -455,6 +455,7 @@
             focusR: 0,
             focusC: 0,
             cycleBacktrackCount: 0,
+            cycleGuessCount: 0,
             currentCycleSummary: null,
 
             async init() {
@@ -573,6 +574,7 @@
 
                     history = [];
                     this.cycleBacktrackCount = 0;
+                    this.cycleGuessCount = 0;
                     this.currentCycleSummary = null;
 
                     let phaseStartedAt = performance.now();
@@ -635,7 +637,8 @@
 
                     this.currentCycleSummary = {
                         solveDurationMs,
-                        backtrackCount: this.cycleBacktrackCount
+                        backtrackCount: this.cycleBacktrackCount,
+                        guessCount: this.cycleGuessCount
                     };
 
                     phaseStartedAt = performance.now();
@@ -859,6 +862,7 @@
                         }
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
+                        this.cycleGuessCount++;
                         if (action.reason === 'MIN_CANDIDATE_GUESS') {
                             this.setStatus(`Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
                         } else {
@@ -1036,7 +1040,7 @@
                 for (let i = 5; i > 0; i--) {
                     if (cycleId !== this.currentCycleId) return;
                     const summary = this.currentCycleSummary;
-                    const summaryText = summary ? ` | Solve ${(summary.solveDurationMs / 1000).toFixed(1)}s | Backtracks ${summary.backtrackCount}` : '';
+                    const summaryText = summary ? ` | Solve ${(summary.solveDurationMs / 1000).toFixed(1)}s | Backtracks ${summary.backtrackCount} | Guesses ${summary.guessCount}` : '';
                     this.setStatus(`${STATUS_MESSAGES.completedCountdown(i)}${summaryText}`, "--text-solved");
                     if (!await this.sleep(1000, cycleId)) return;
                 }
