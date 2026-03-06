@@ -543,18 +543,37 @@
             async moveTo(targetR, targetC, cycleId) {
                 let currentMoveSpeed = (tickRate / 1000) * BASE_MOVE_SPEED;
                 currentMoveSpeed = Math.max(MIN_MOVE_SPEED, Math.min(MAX_MOVE_SPEED, currentMoveSpeed));
-                
-                while (this.focusC !== targetC) {
-                    if (cycleId !== this.currentCycleId) return false;
-                    const nextC = this.focusC < targetC ? this.focusC + 1 : this.focusC - 1;
-                    this.setFocus(this.focusR, nextC);
-                    if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
-                }
-                while (this.focusR !== targetR) {
-                    if (cycleId !== this.currentCycleId) return false;
-                    const nextR = this.focusR < targetR ? this.focusR + 1 : this.focusR - 1;
-                    this.setFocus(nextR, this.focusC);
-                    if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
+
+                const rowDiff = Math.abs(targetR - this.focusR);
+                const colDiff = Math.abs(targetC - this.focusC);
+                const moveRowFirst = rowDiff < colDiff ? true : colDiff < rowDiff ? false : Math.random() < 0.5;
+
+                const stepRow = async () => {
+                    while (this.focusR !== targetR) {
+                        if (cycleId !== this.currentCycleId) return false;
+                        const nextR = this.focusR < targetR ? this.focusR + 1 : this.focusR - 1;
+                        this.setFocus(nextR, this.focusC);
+                        if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
+                    }
+                    return true;
+                };
+
+                const stepCol = async () => {
+                    while (this.focusC !== targetC) {
+                        if (cycleId !== this.currentCycleId) return false;
+                        const nextC = this.focusC < targetC ? this.focusC + 1 : this.focusC - 1;
+                        this.setFocus(this.focusR, nextC);
+                        if (!await this.sleep(currentMoveSpeed, cycleId)) return false;
+                    }
+                    return true;
+                };
+
+                if (moveRowFirst) {
+                    if (!await stepRow()) return false;
+                    if (!await stepCol()) return false;
+                } else {
+                    if (!await stepCol()) return false;
+                    if (!await stepRow()) return false;
                 }
                 return true;
             },
