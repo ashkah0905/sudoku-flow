@@ -386,13 +386,13 @@
         const tickValueDisplay = document.getElementById('tick-value');
         const DEBUG = false;
         const STATUS_MESSAGES = {
-            generatingBoard: (difficultyLabel) => `🏗️ Generating Board [${difficultyLabel}]`,
-            fillingCandidates: "✍️ Filling Candidates...",
-            verifyingHypothesis: "🧠 Verifying Hypothesis...",
-            analyzing: "🔍 Analyzing...",
-            contradictionRetrying: "⚠️ Contradiction Detected! Retrying",
-            solvingFailedRegenerating: "♻️ Solving failed. Regenerating...",
-            backtracking: "⏪ Backtracking...",
+            generatingBoard: (difficultyLabel) => `🧩 Generating Board [${difficultyLabel}]`,
+            fillingCandidates: "🔍 Action: CANDIDATE_SCAN",
+            guessing: (val) => `🤔 Action: GUESS -> try ${val}`,
+            confirming: (val) => `✅ Action: CONFIRM -> place ${val}`,
+            contradictionRetrying: "⚠️ Action: CONTRADICTION -> retry",
+            solvingFailedRegenerating: "🔄 Action: REGENERATE_BOARD",
+            backtracking: "↩️ Action: BACKTRACK -> restore previous guess",
             completedCountdown: (seconds) => `🎉 Completed! Next board in ${seconds}...`
         };
         
@@ -846,11 +846,11 @@
                     if (action.type === 'CONTRADICTION') {
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
-                        this.setStatus(STATUS_MESSAGES.verifyingHypothesis, "--text-warning");
+                        this.setStatus(STATUS_MESSAGES.guessing(action.val), "--text-warning");
                         this.saveHistory(action.cell, action.val);
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
-                        this.setStatus(STATUS_MESSAGES.analyzing, "--text-solved");
+                        this.setStatus(STATUS_MESSAGES.confirming(action.val), "--text-solved");
                         await this.confirmCell(action.cell, action.val, false);
                     }
                     if (!await this.sleep(tickRate, cycleId)) return false;
