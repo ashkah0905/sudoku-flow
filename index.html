@@ -854,13 +854,24 @@
                         if (!await this.moveTo(action.cell.r, action.cell.c, cycleId)) return false;
                     }
                     if (action.type === 'CONTRADICTION') {
+                        if (action.reason === 'EMPTY_MEMO') {
+                            this.setStatus("Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
+                        }
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
-                        this.setStatus(STATUS_MESSAGES.guessing(action.val), "--text-warning");
+                        if (action.reason === 'MIN_CANDIDATE_GUESS') {
+                            this.setStatus(`Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
+                        } else {
+                            this.setStatus(STATUS_MESSAGES.guessing(action.val), "--text-warning");
+                        }
                         this.saveHistory(action.cell, action.val);
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
-                        this.setStatus(STATUS_MESSAGES.confirming(action.val), "--text-solved");
+                        if (action.reason === 'SINGLE_CANDIDATE') {
+                            this.setStatus(`Action: CONFIRM (SINGLE_CANDIDATE) -> place ${action.val}`, "--text-solved");
+                        } else {
+                            this.setStatus(STATUS_MESSAGES.confirming(action.val), "--text-solved");
+                        }
                         await this.confirmCell(action.cell, action.val, false);
                     }
                     if (!await this.sleep(tickRate, cycleId)) return false;
@@ -873,13 +884,13 @@
                 for (let r = 0; r < 9; r++) {
                     for (let c = 0; c < 9; c++) {
                         const cell = grid[r][c];
-                        if (cell.val === 0 && cell.memos.size === 0) return { type: 'CONTRADICTION', cell };
+                        if (cell.val === 0 && cell.memos.size === 0) return { type: 'CONTRADICTION', cell, reason: 'EMPTY_MEMO' };
                     }
                 }
                 for (let r = 0; r < 9; r++) {
                     for (let c = 0; c < 9; c++) {
                         const cell = grid[r][c];
-                        if (cell.val === 0 && cell.memos.size === 1) return { type: 'CONFIRM', cell, val: [...cell.memos][0] };
+                        if (cell.val === 0 && cell.memos.size === 1) return { type: 'CONFIRM', cell, val: [...cell.memos][0], reason: 'SINGLE_CANDIDATE' };
                     }
                 }
                 let best = null;
@@ -892,7 +903,7 @@
                 if (best) {
                     const candidates = [...best.memos];
                     const randomVal = candidates[Math.floor(Math.random() * candidates.length)];
-                    return { type: 'GUESS', cell: best, val: randomVal };
+                    return { type: 'GUESS', cell: best, val: randomVal, reason: 'MIN_CANDIDATE_GUESS' };
                 }
                 return { type: 'CONTRADICTION', cell: null };
             },
