@@ -914,6 +914,18 @@
                     hasErrorCell: Boolean(errorCell),
                     historyDepth: history.length
                 });
+                if (this.difficulty === 'CHAOS' && this.cycleBacktrackCount > 20) {
+                    this.debugLog('backtrack', {
+                        cycleId,
+                        stage: 'chaos_safety_regenerate',
+                        historyDepth: history.length,
+                        backtrackCount: this.cycleBacktrackCount
+                    });
+                    this.setStatus(STATUS_MESSAGES.solvingFailedRegenerating);
+                    await this.sleep(1500, cycleId);
+                    await this.restart();
+                    return false;
+                }
                 if (errorCell) errorCell.dom.classList.add('error');
                 this.setStatus(STATUS_MESSAGES.contradictionRetrying, "--text-error");
                 if (!await this.sleep(Math.max(500, tickRate), cycleId)) return false;
