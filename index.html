@@ -384,6 +384,7 @@
         const themeButtons = document.querySelectorAll('.theme-btn');
         const tickSlider = document.getElementById('tick-slider');
         const tickValueDisplay = document.getElementById('tick-value');
+        const DEBUG = false;
         const STATUS_MESSAGES = {
             generatingBoard: (difficultyLabel) => `🏗️ Generating Board [${difficultyLabel}]`,
             fillingCandidates: "✍️ Filling Candidates...",
@@ -557,12 +558,85 @@
 
             async startCycle() {
                 const cycleId = this.currentCycleId;
+                let cycleNumber = 0;
                 while(cycleId === this.currentCycleId) {
+                    cycleNumber++;
+                    const cycleStartedAt = performance.now();
+                    this.debugLog('cycle_start', {
+                        cycleId,
+                        cycleNumber,
+                        difficulty: this.difficulty,
+                        tickRate
+                    });
+
                     history = [];
-                    if (!await this.generatePuzzle(cycleId)) break;
-                    if (!await this.phaseMemoFill(cycleId)) break;
-                    if (!await this.phaseSolve(cycleId)) break;
+
+                    let phaseStartedAt = performance.now();
+                    const generated = await this.generatePuzzle(cycleId);
+                    this.debugLog('phase_duration', {
+                        cycleId,
+                        cycleNumber,
+                        phase: 'generatePuzzle',
+                        durationMs: Math.round(performance.now() - phaseStartedAt),
+                        success: generated
+                    });
+                    if (!generated) {
+                        this.debugLog('cycle_end', {
+                            cycleId,
+                            cycleNumber,
+                            reason: 'generatePuzzle_interrupted',
+                            durationMs: Math.round(performance.now() - cycleStartedAt)
+                        });
+                        break;
+                    }
+
+                    phaseStartedAt = performance.now();
+                    const memoFilled = await this.phaseMemoFill(cycleId);
+                    this.debugLog('phase_duration', {
+                        cycleId,
+                        cycleNumber,
+                        phase: 'phaseMemoFill',
+                        durationMs: Math.round(performance.now() - phaseStartedAt),
+                        success: memoFilled
+                    });
+                    if (!memoFilled) {
+                        this.debugLog('cycle_end', {
+                            cycleId,
+                            cycleNumber,
+                            reason: 'phaseMemoFill_interrupted',
+                            durationMs: Math.round(performance.now() - cycleStartedAt)
+                        });
+                        break;
+                    }
+
+                    phaseStartedAt = performance.now();
+                    const solved = await this.phaseSolve(cycleId);
+                    this.debugLog('phase_duration', {
+                        cycleId,
+                        cycleNumber,
+                        phase: 'phaseSolve',
+                        durationMs: Math.round(performance.now() - phaseStartedAt),
+                        success: solved
+                    });
+                    if (!solved) {
+                        this.debugLog('cycle_end', {
+                            cycleId,
+                            cycleNumber,
+                            reason: 'phaseSolve_interrupted',
+                            durationMs: Math.round(performance.now() - cycleStartedAt)
+                        });
+                        break;
+                    }
+
+                    phaseStartedAt = performance.now();
                     await this.phaseComplete(cycleId);
+                    this.debugLog('phase_duration', {
+                        cycleId,
+                        cycleNumber,
+                        phase: 'phaseComplete',
+                        durationMs: Math.round(performance.now() - phaseStartedAt),
+                        success: cycleId === this.currentCycleId
+                    });
                     
                     if (cycleId === this.currentCycleId) {
                         boardContainer.classList.add('fade-out');
@@ -571,6 +645,13 @@
                         boardContainer.classList.remove('fade-out');
                         await this.sleep(600, cycleId);
                     }
+
+                    this.debugLog('cycle_end', {
+                        cycleId,
+                        cycleNumber,
+                        reason: cycleId === this.currentCycleId ? 'completed' : 'cycle_changed',
+                        durationMs: Math.round(performance.now() - cycleStartedAt)
+                    });
                 }
             },
 
@@ -584,6 +665,12 @@
                 statusElement.innerText = message;
                 if (colorVar) statusElement.style.color = `var(${colorVar})`;
             },
+
+            debugLog(event, payload = {}) {
+                if (!DEBUG) return;
+                console.log(`[sudoku-flow] ${event}`, payload);
+            },
+
             async generatePuzzle(cycleId) {
                 const diffLabels = { CALM: "CALM", CHAOS: "CHAOS" };
                 this.setStatus(STATUS_MESSAGES.generatingBoard(diffLabels[this.difficulty]), "--text-solved");
@@ -686,6 +773,14 @@
                 while (!this.isAllFilled()) {
                     if (cycleId !== this.currentCycleId) return false;
                     const action = this.findNextAction();
+                    this.debugLog('action_selected', {
+                        cycleId,
+                        action: action.type,
+                        row: action.cell ? action.cell.r : null,
+                        col: action.cell ? action.cell.c : null,
+                        val: action.val ?? null,
+                        memoCount: action.cell ? action.cell.memos.size : null
+                    });
                     if (action.cell) {
                         if (!await this.moveTo(action.cell.r, action.cell.c, cycleId)) return false;
                     }
@@ -743,11 +838,22 @@
             },
 
             async backtrack(errorCell, cycleId) {
+                this.debugLog('backtrack', {
+                    cycleId,
+                    stage: 'detected',
+                    hasErrorCell: Boolean(errorCell),
+                    historyDepth: history.length
+                });
                 if (errorCell) errorCell.dom.classList.add('error');
                 this.setStatus(STATUS_MESSAGES.contradictionRetrying, "--text-error");
                 if (!await this.sleep(Math.max(500, tickRate), cycleId)) return false;
                 if (errorCell) errorCell.dom.classList.remove('error');
                 if (history.length === 0) {
+                    this.debugLog('backtrack', {
+                        cycleId,
+                        stage: 'restart',
+                        historyDepth: 0
+                    });
                     this.setStatus(STATUS_MESSAGES.solvingFailedRegenerating);
                     await this.sleep(1500, cycleId);
                     await this.restart();
@@ -755,6 +861,14 @@
                 }
                 this.setStatus(STATUS_MESSAGES.backtracking, "--text-warning");
                 const lastState = history.pop();
+                this.debugLog('backtrack', {
+                    cycleId,
+                    stage: 'restore',
+                    historyDepth: history.length,
+                    targetRow: lastState.cellCoord.r,
+                    targetCol: lastState.cellCoord.c,
+                    removedCandidate: lastState.failedVal
+                });
                 grid = lastState.gridState.map(row => row.map(c => c.clone()));
                 const targetCell = grid[lastState.cellCoord.r][lastState.cellCoord.c];
                 targetCell.memos.delete(lastState.failedVal);
