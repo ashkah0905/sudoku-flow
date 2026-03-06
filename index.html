@@ -678,11 +678,23 @@
                 
                 let rawGrid = Array.from({length: 9}, () => Array(9).fill(0));
                 generateFullGrid(rawGrid);
-                
-                // CALM uses EASY logic (0.45), CHAOS uses INSANE logic (0.88)
-                let removeProb = { CALM: 0.45, CHAOS: 0.88 }[this.difficulty];
+
+                const removeRanges = { CALM: [34, 38], CHAOS: [68, 72] };
+                const [minRemove, maxRemove] = removeRanges[this.difficulty];
+                const removeCount = minRemove + Math.floor(Math.random() * (maxRemove - minRemove + 1));
+
+                const positions = [];
+                for (let r = 0; r < 9; r++) {
+                    for (let c = 0; c < 9; c++) positions.push([r, c]);
+                }
+                for (let i = positions.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [positions[i], positions[j]] = [positions[j], positions[i]];
+                }
+
+                const removed = new Set(positions.slice(0, removeCount).map(([r, c]) => `${r}-${c}`));
                 grid = rawGrid.map((row, r) => row.map((val, c) => {
-                    const isRemoved = Math.random() < removeProb;
+                    const isRemoved = removed.has(`${r}-${c}`);
                     return new Cell(r, c, isRemoved ? 0 : val);
                 }));
 
