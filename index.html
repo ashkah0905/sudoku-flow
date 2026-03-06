@@ -879,13 +879,13 @@
                     }
                     if (action.type === 'CONTRADICTION') {
                         if (action.reason === 'EMPTY_MEMO') {
-                            this.setStatus("Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
+                            this.setStatus("⚠️ Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
                         }
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
                         this.cycleGuessCount++;
                         if (action.reason === 'MIN_CANDIDATE_GUESS') {
-                            this.setStatus(`Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
+                            this.setStatus(`🤔 Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
                         } else {
                             this.setStatus(STATUS_MESSAGES.guessing(action.val), "--text-warning");
                         }
@@ -893,7 +893,7 @@
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
                         if (action.reason === 'SINGLE_CANDIDATE') {
-                            this.setStatus(`Action: CONFIRM (SINGLE_CANDIDATE) -> place ${action.val}`, "--text-solved");
+                            this.setStatus(`✅ Action: CONFIRM (SINGLE_CANDIDATE) -> place ${action.val}`, "--text-solved");
                         } else {
                             this.setStatus(STATUS_MESSAGES.confirming(action.val), "--text-solved");
                         }
