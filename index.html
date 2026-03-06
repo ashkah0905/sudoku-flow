@@ -384,6 +384,16 @@
         const themeButtons = document.querySelectorAll('.theme-btn');
         const tickSlider = document.getElementById('tick-slider');
         const tickValueDisplay = document.getElementById('tick-value');
+        const STATUS_MESSAGES = {
+            generatingBoard: (difficultyLabel) => `🏗️ Generating Board [${difficultyLabel}]`,
+            fillingCandidates: "✍️ Filling Candidates...",
+            verifyingHypothesis: "🧠 Verifying Hypothesis...",
+            analyzing: "🔍 Analyzing...",
+            contradictionRetrying: "⚠️ Contradiction Detected! Retrying",
+            solvingFailedRegenerating: "♻️ Solving failed. Regenerating...",
+            backtracking: "⏪ Backtracking...",
+            completedCountdown: (seconds) => `🎉 Completed! Next board in ${seconds}...`
+        };
         
         let grid = [];
         let cells = [];
@@ -570,10 +580,13 @@
                 });
             },
 
+            setStatus(message, colorVar) {
+                statusElement.innerText = message;
+                if (colorVar) statusElement.style.color = `var(${colorVar})`;
+            },
             async generatePuzzle(cycleId) {
                 const diffLabels = { CALM: "CALM", CHAOS: "CHAOS" };
-                statusElement.innerText = `🏗️ Generating Board [${diffLabels[this.difficulty]}]`;
-                statusElement.style.color = "var(--text-solved)";
+                this.setStatus(STATUS_MESSAGES.generatingBoard(diffLabels[this.difficulty]), "--text-solved");
                 overlay.style.display = 'none';
                 
                 let rawGrid = Array.from({length: 9}, () => Array(9).fill(0));
@@ -627,7 +640,7 @@
             },
 
             async phaseMemoFill(cycleId) {
-                statusElement.innerText = "✍️ Filling Candidates...";
+                this.setStatus(STATUS_MESSAGES.fillingCandidates);
                 for (let r = 0; r < 9; r++) {
                     const isReverse = (r % 2 !== 0);
                     for (let i = 0; i < 9; i++) {
@@ -679,13 +692,11 @@
                     if (action.type === 'CONTRADICTION') {
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
-                        statusElement.innerText = "🧠 Verifying Hypothesis...";
-                        statusElement.style.color = "var(--text-warning)";
+                        this.setStatus(STATUS_MESSAGES.verifyingHypothesis, "--text-warning");
                         this.saveHistory(action.cell, action.val);
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
-                        statusElement.innerText = "🔍 Analyzing...";
-                        statusElement.style.color = "var(--text-solved)";
+                        this.setStatus(STATUS_MESSAGES.analyzing, "--text-solved");
                         await this.confirmCell(action.cell, action.val, false);
                     }
                     if (!await this.sleep(tickRate, cycleId)) return false;
@@ -733,18 +744,16 @@
 
             async backtrack(errorCell, cycleId) {
                 if (errorCell) errorCell.dom.classList.add('error');
-                statusElement.innerText = "⚠️ Contradiction Detected! Retrying";
-                statusElement.style.color = "var(--text-error)";
+                this.setStatus(STATUS_MESSAGES.contradictionRetrying, "--text-error");
                 if (!await this.sleep(Math.max(500, tickRate), cycleId)) return false;
                 if (errorCell) errorCell.dom.classList.remove('error');
                 if (history.length === 0) {
-                    statusElement.innerText = "♻️ Solving failed. Regenerating...";
+                    this.setStatus(STATUS_MESSAGES.solvingFailedRegenerating);
                     await this.sleep(1500, cycleId);
                     await this.restart();
                     return false;
                 }
-                statusElement.innerText = "⏪ Backtracking...";
-                statusElement.style.color = "var(--text-warning)";
+                this.setStatus(STATUS_MESSAGES.backtracking, "--text-warning");
                 const lastState = history.pop();
                 grid = lastState.gridState.map(row => row.map(c => c.clone()));
                 const targetCell = grid[lastState.cellCoord.r][lastState.cellCoord.c];
@@ -819,8 +828,7 @@
                 overlay.style.display = 'block';
                 for (let i = 5; i > 0; i--) {
                     if (cycleId !== this.currentCycleId) return;
-                    statusElement.innerText = `🎉 Completed! Next board in ${i}...`;
-                    statusElement.style.color = "var(--text-solved)";
+                    this.setStatus(STATUS_MESSAGES.completedCountdown(i), "--text-solved");
                     if (!await this.sleep(1000, cycleId)) return;
                 }
             }
