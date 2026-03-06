@@ -595,6 +595,8 @@
                     this.cycleBacktrackCount = 0;
                     this.cycleGuessCount = 0;
                     this.currentCycleSummary = null;
+                    this.focusR = 0;
+                    this.focusC = 0;
 
                     let phaseStartedAt = performance.now();
                     const generated = await this.generatePuzzle(cycleId);
