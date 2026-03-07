@@ -151,6 +151,16 @@
             font-weight: bold;
         }
 
+        .diff-btn.tap-feedback {
+            animation: diffTap 0.18s ease;
+        }
+
+        @keyframes diffTap {
+            0% { transform: scale(1); }
+            50% { transform: scale(0.96); }
+            100% { transform: scale(1); }
+        }
+
         #board-layout {
             position: relative;
             display: flex;
@@ -207,6 +217,12 @@
         }
 
         .sudoku-container.fade-out { opacity: 0; }
+
+        .sudoku-container.fade-out .cell,
+        .sudoku-container.fade-out .cell * {
+            animation: none !important;
+            transition: none !important;
+        }
 
         .sudoku-board {
             display: grid;
@@ -473,11 +489,14 @@
                         this.difficulty = level;
                         diffButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
+                        btn.classList.remove('tap-feedback');
+                        void btn.offsetWidth;
+                        btn.classList.add('tap-feedback');
+                        setTimeout(() => btn.classList.remove('tap-feedback'), 180);
                         await this.restart();
                     });
                 });
             },
-
             setupThemeListeners() {
                 themeButtons.forEach(btn => {
                     btn.addEventListener('click', () => {
@@ -488,7 +507,6 @@
                     });
                 });
             },
-
             setupTickListener() {
                 tickSlider.addEventListener('input', (e) => {
                     tickRate = parseInt(e.target.value);
