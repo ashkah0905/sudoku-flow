@@ -526,8 +526,6 @@
                 
                 this.createDOM();
                 this.startCycle();
-                
-                boardContainer.classList.remove('fade-out');
             },
 
             createDOM() {
@@ -599,6 +597,7 @@
             async startCycle() {
                 const cycleId = this.currentCycleId;
                 let cycleNumber = 0;
+                let shouldFadeIn = boardContainer.classList.contains('fade-out');
                 while(cycleId === this.currentCycleId) {
                     cycleNumber++;
                     const cycleStartedAt = performance.now();
@@ -633,6 +632,12 @@
                             durationMs: Math.round(performance.now() - cycleStartedAt)
                         });
                         break;
+                    }
+
+                    if (shouldFadeIn) {
+                        boardContainer.classList.remove('fade-out');
+                        if (!await this.sleep(600, cycleId)) break;
+                        shouldFadeIn = false;
                     }
 
                     phaseStartedAt = performance.now();
@@ -695,8 +700,7 @@
                         boardContainer.classList.add('fade-out');
                         await this.sleep(1000, cycleId);
                         this.createDOM();
-                        boardContainer.classList.remove('fade-out');
-                        await this.sleep(600, cycleId);
+                        shouldFadeIn = true;
                     }
 
                     this.debugLog('cycle_end', {
@@ -800,7 +804,7 @@
 
                 this.updateDisplay();
                 this.setFocus(this.focusR, this.focusC);
-                return await this.sleep(1000, cycleId);
+                return true;
             },
 
             updateDisplay() {
