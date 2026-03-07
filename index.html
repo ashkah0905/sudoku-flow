@@ -8,6 +8,8 @@
         :root {
             /* Default: Light Theme */
             --bg-color: #fcfcfc;
+            --page-bg-color: #f6f8fb;
+            --board-bg-color: #ffffff;
             --line-color: #333;
             --text-original: #000;
             --text-solved: #3f6f99;
@@ -28,6 +30,8 @@
         /* Dark Theme */
         body.theme-dark {
             --bg-color: #121417;
+            --page-bg-color: #121417;
+            --board-bg-color: #121417;
             --line-color: #9aa4af;
             --text-original: #e6eaf0;
             --text-solved: #7fb6d8;
@@ -43,6 +47,8 @@
         /* Sepia Theme */
         body.theme-sepia {
             --bg-color: #f4ecd8;
+            --page-bg-color: #f4ecd8;
+            --board-bg-color: #f4ecd8;
             --line-color: #5d4037;
             --text-original: #3e2723;
             --text-solved: #006064;
@@ -58,6 +64,8 @@
         /* Neon Theme */
         body.theme-neon {
             --bg-color: #1a0033;
+            --page-bg-color: #1a0033;
+            --board-bg-color: #1a0033;
             --line-color: #ff00ff;
             --text-original: #fff;
             --text-solved: #00ffff;
@@ -75,7 +83,7 @@
         body {
             margin: 0;
             padding: 10px;
-            background-color: var(--bg-color);
+            background-color: var(--page-bg-color, var(--bg-color));
             color: var(--text-original);
             font-family: 'Helvetica Neue', 'Segoe UI', Arial, sans-serif;
             display: flex;
@@ -228,7 +236,7 @@
             display: grid;
             grid-template-columns: repeat(9, var(--cell-size));
             grid-template-rows: repeat(9, var(--cell-size));
-            background-color: var(--bg-color);
+            background-color: var(--board-bg-color, var(--bg-color));
             gap: 0;
             transition: background-color var(--transition-speed) ease;
         }
