@@ -726,7 +726,7 @@
 
             async generatePuzzle(cycleId) {
                 const diffLabels = { CALM: "CALM", CHAOS: "CHAOS" };
-                this.setStatus(STATUS_MESSAGES.generatingBoard(diffLabels[this.difficulty]), "--text-solved");
+
                 overlay.style.display = 'none';
                 
                 let rawGrid = Array.from({length: 9}, () => Array(9).fill(0));
