@@ -918,6 +918,7 @@
                         }
                         await this.confirmCell(action.cell, action.val, false);
                     }
+                    if (this.isAllFilled()) break;
                     if (!await this.sleep(tickRate, cycleId)) return false;
                 }
                 this.clearFocus();
