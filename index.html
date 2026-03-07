@@ -470,7 +470,6 @@
                 diffButtons.forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const level = btn.getAttribute('data-level');
-                        if (this.difficulty === level) return;
                         this.difficulty = level;
                         diffButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
@@ -502,6 +501,7 @@
                 history = [];
                 this.focusR = 0;
                 this.focusC = 0;
+                this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                 
                 boardContainer.classList.add('fade-out');
                 await this.sleep(600, this.currentCycleId);
@@ -673,6 +673,7 @@
                     });
                     
                     if (cycleId === this.currentCycleId) {
+                        this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                         boardContainer.classList.add('fade-out');
                         await this.sleep(1000, cycleId);
                         this.createDOM();
