@@ -10,8 +10,8 @@
             --bg-color: #fcfcfc;
             --page-bg-color: #f6f8fb;
             --board-bg-color: #ffffff;
-            --line-color: #333;
-            --text-original: #000;
+            --line-color: #5a6673;
+            --text-original: #1f2933;
             --text-solved: #3f6f99;
             --text-memo: #aaa;
             --text-warning: #c9863f;
@@ -201,7 +201,7 @@
             box-shadow: 0 0 12px var(--text-solved);
         }
         .theme-light-btn { background: #fff; border-color: #ddd; }
-        .theme-dark-btn { background: #000; }
+        .theme-dark-btn { background: #1f2933; }
         .theme-sepia-btn { background: #f4ecd8; border-color: #5d4037; }
         .theme-neon-btn { background: linear-gradient(45deg, #1a0033, #ff00ff); }
 
@@ -412,11 +412,11 @@
         const STATUS_MESSAGES = {
             generatingBoard: (difficultyLabel) => `🧩 Generating Board [${difficultyLabel}]`,
             fillingCandidates: "🔍 Action: CANDIDATE_SCAN",
-            guessing: (val) => `🤔 Action: GUESS -> try ${val}`,
-            confirming: (val) => `✅ Action: CONFIRM -> place ${val}`,
-            contradictionRetrying: "⚠️ Action: CONTRADICTION -> retry",
+            guessing: (val) => `🤔Action: GUESS -> try ${val}`,
+            confirming: (val) => `✅Action: CONFIRM -> place ${val}`,
+            contradictionRetrying: "⚠️Action: CONTRADICTION -> retry",
             solvingFailedRegenerating: "🔄 Action: REGENERATE_BOARD",
-            backtracking: "↩️ Action: BACKTRACK -> restore previous guess",
+            backtracking: "↩️Action: BACKTRACK -> restore previous guess",
             completedCountdown: (seconds) => `🎉 Completed! Next board in ${seconds}...`
         };
         
@@ -910,13 +910,13 @@
                     }
                     if (action.type === 'CONTRADICTION') {
                         if (action.reason === 'EMPTY_MEMO') {
-                            this.setStatus("⚠️ Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
+                            this.setStatus("⚠️Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
                         }
                         if (!await this.backtrack(action.cell, cycleId)) return true;
                     } else if (action.type === 'GUESS') {
                         this.cycleGuessCount++;
                         if (action.reason === 'MIN_CANDIDATE_GUESS') {
-                            this.setStatus(`🤔 Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
+                            this.setStatus(`🤔Action: GUESS (MIN_CANDIDATE_GUESS) -> try ${action.val}`, "--text-warning");
                         } else {
                             this.setStatus(STATUS_MESSAGES.guessing(action.val), "--text-warning");
                         }
@@ -924,7 +924,7 @@
                         await this.confirmCell(action.cell, action.val, true);
                     } else if (action.type === 'CONFIRM') {
                         if (action.reason === 'SINGLE_CANDIDATE') {
-                            this.setStatus(`✅ Action: CONFIRM (SINGLE_CANDIDATE) -> place ${action.val}`, "--text-solved");
+                            this.setStatus(`✅Action: CONFIRM (SINGLE_CANDIDATE) -> place ${action.val}`, "--text-solved");
                         } else {
                             this.setStatus(STATUS_MESSAGES.confirming(action.val), "--text-solved");
                         }
