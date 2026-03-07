@@ -646,6 +646,9 @@
                         if (!await this.sleep(600, cycleId)) break;
                         shouldFadeIn = false;
                     }
+                    if (cycleNumber > 1) {
+                        if (!await this.sleep(200, cycleId)) break;
+                    }
 
                     phaseStartedAt = performance.now();
                     const memoFilled = await this.phaseMemoFill(cycleId);
