@@ -221,7 +221,7 @@
             background-color: var(--line-color);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             line-height: 0;
-            transition: opacity var(--transition-speed) ease;
+            transition: opacity var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .sudoku-container.fade-out { opacity: 0; }
@@ -728,7 +728,11 @@
             },
 
             setStatus(message, colorVar) {
-                statusElement.innerText = message;
+                const formatted = String(message)
+                    .replace(/(try|place)\s+(\d+)/g, '$1 <strong>$2</strong>')
+                    .replace(/(Solve)\s+([0-9]+(?:\.[0-9]+)?s)/g, '$1 <strong>$2</strong>')
+                    .replace(/(Backtracks|Guesses)\s+(\d+)/g, '$1 <strong>$2</strong>');
+                statusElement.innerHTML = formatted;
                 if (colorVar) statusElement.style.color = `var(${colorVar})`;
             },
 
@@ -1105,5 +1109,8 @@
     </script>
 </body>
 </html>
+
+
+
 
 
