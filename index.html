@@ -224,13 +224,11 @@
             transition: opacity var(--transition-speed) cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .sudoku-container.fade-out { opacity: 0; }
-
-        .sudoku-container.fade-out .cell,
-        .sudoku-container.fade-out .cell * {
-            animation: none !important;
-            transition: none !important;
+        .sudoku-container.fade-out {
+            opacity: 0;
+            transition-duration: 0s;
         }
+
 
         .sudoku-board {
             display: grid;
@@ -531,7 +529,7 @@
                 this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                 
                 boardContainer.classList.add('fade-out');
-                await this.sleep(600, this.currentCycleId);
+                await this.sleep(0, this.currentCycleId);
                 
                 this.createDOM();
                 this.startCycle();
@@ -707,7 +705,7 @@
                     if (cycleId === this.currentCycleId) {
                         this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                         boardContainer.classList.add('fade-out');
-                        await this.sleep(1000, cycleId);
+                        await this.sleep(0, cycleId);
                         this.createDOM();
                         shouldFadeIn = true;
                     }
@@ -1109,6 +1107,7 @@
     </script>
 </body>
 </html>
+
 
 
 
