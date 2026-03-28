@@ -408,6 +408,11 @@
         const tickSlider = document.getElementById('tick-slider');
         const tickValueDisplay = document.getElementById('tick-value');
         const DEBUG = false;
+        const STORAGE_KEYS = {
+            difficulty: 'sudokuFlow.difficulty',
+            theme: 'sudokuFlow.theme',
+            tickRate: 'sudokuFlow.tickRate'
+        };
         const STATUS_MESSAGES = {
             generatingBoard: (difficultyLabel) => `🔄 Generating Board [${difficultyLabel}]`,
             fillingCandidates: "🔍 Action: CANDIDATE_SCAN",
@@ -426,6 +431,8 @@
         const BASE_MOVE_SPEED = 60;
         const MIN_MOVE_SPEED = 5;
         const MAX_MOVE_SPEED = 350;
+        const VALID_DIFFICULTIES = ['CALM', 'CHAOS'];
+        const VALID_THEMES = ['light', 'dark', 'sepia', 'neon'];
 
         class Cell {
             constructor(r, c, val = 0) {
@@ -482,6 +489,7 @@
             currentCycleSummary: null,
 
             async init() {
+                this.restorePreferences();
                 this.setupDifficultyListeners();
                 this.setupThemeListeners();
                 this.setupTickListener();
@@ -489,11 +497,59 @@
                 this.startCycle();
             },
 
+            restorePreferences() {
+                const savedDifficulty = this.getSavedPreference(STORAGE_KEYS.difficulty);
+                if (VALID_DIFFICULTIES.includes(savedDifficulty)) {
+                    this.difficulty = savedDifficulty;
+                }
+                diffButtons.forEach(btn => {
+                    const isActive = btn.getAttribute('data-level') === this.difficulty;
+                    btn.classList.toggle('active', isActive);
+                });
+
+                const savedTheme = this.getSavedPreference(STORAGE_KEYS.theme);
+                const theme = VALID_THEMES.includes(savedTheme) ? savedTheme : 'light';
+                document.body.className = `theme-${theme}`;
+                themeButtons.forEach(btn => {
+                    const isActive = btn.getAttribute('data-theme') === theme;
+                    btn.classList.toggle('active', isActive);
+                });
+
+                const savedTickRaw = this.getSavedPreference(STORAGE_KEYS.tickRate);
+                const savedTick = Number.parseInt(savedTickRaw, 10);
+                if (Number.isFinite(savedTick)) {
+                    const min = Number.parseInt(tickSlider.min, 10);
+                    const max = Number.parseInt(tickSlider.max, 10);
+                    const step = Number.parseInt(tickSlider.step, 10) || 1;
+                    const clamped = Math.max(min, Math.min(max, savedTick));
+                    tickRate = Math.round(clamped / step) * step;
+                }
+                tickSlider.value = String(tickRate);
+                tickValueDisplay.innerText = `${tickRate}ms`;
+            },
+
+            getSavedPreference(key) {
+                try {
+                    return window.localStorage.getItem(key);
+                } catch {
+                    return null;
+                }
+            },
+
+            savePreference(key, value) {
+                try {
+                    window.localStorage.setItem(key, String(value));
+                } catch {
+                    // Ignore storage failures (privacy mode, disabled storage, etc.)
+                }
+            },
+
             setupDifficultyListeners() {
                 diffButtons.forEach(btn => {
                     btn.addEventListener('click', async () => {
                         const level = btn.getAttribute('data-level');
                         this.difficulty = level;
+                        this.savePreference(STORAGE_KEYS.difficulty, level);
                         diffButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
                         btn.classList.remove('tap-feedback');
@@ -509,6 +565,7 @@
                     btn.addEventListener('click', () => {
                         const theme = btn.getAttribute('data-theme');
                         document.body.className = `theme-${theme}`;
+                        this.savePreference(STORAGE_KEYS.theme, theme);
                         themeButtons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
                     });
@@ -518,6 +575,7 @@
                 tickSlider.addEventListener('input', (e) => {
                     tickRate = parseInt(e.target.value);
                     tickValueDisplay.innerText = `${tickRate}ms`;
+                    this.savePreference(STORAGE_KEYS.tickRate, tickRate);
                 });
             },
 
