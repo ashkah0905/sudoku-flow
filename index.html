@@ -1255,10 +1255,17 @@
                 const boardRect = boardContainer.getBoundingClientRect();
                 const spawnLeft = 0;
                 const spawnRight = width;
-                const spawnTop = Math.max(10, boardRect.top - boardRect.height * 0.55);
-                const spawnBottom = Math.max(spawnTop + 20, boardRect.top - boardRect.height * 0.08);
-                const particleCount = 74;
-                const particles = Array.from({ length: particleCount }, () => ({
+                const spawnTop = Math.max(0, boardRect.top - boardRect.height * 0.95);
+                const spawnBottom = Math.max(
+                    spawnTop + 36,
+                    Math.min(height * 0.26, boardRect.top + boardRect.height * 0.2)
+                );
+                const particles = [];
+                const initialBurstCount = 46;
+                const emissionDuration = 900;
+                const emissionRatePerMs = 0.03;
+                let emissionCarry = 0;
+                const spawnParticle = () => ({
                     x: spawnLeft + Math.random() * (spawnRight - spawnLeft),
                     y: spawnTop + Math.random() * (spawnBottom - spawnTop),
                     vx: (Math.random() - 0.5) * 0.14,
@@ -1269,12 +1276,19 @@
                     rotV: (Math.random() - 0.5) * 0.009,
                     wobble: Math.random() * Math.PI * 2,
                     wobbleV: 0.005 + Math.random() * 0.006,
+                    windBias: (Math.random() - 0.5) * 0.04,
                     isAccent: Math.random() < 0.28,
                     age: 0,
                     life: 2800 + Math.random() * 400
-                }));
+                });
+                for (let i = 0; i < initialBurstCount; i++) {
+                    const p = spawnParticle();
+                    p.vy *= 0.72; // Give the opening burst a punchier "pop".
+                    particles.push(p);
+                }
 
                 let previousTs = performance.now();
+                const startedAt = previousTs;
                 const render = (ts) => {
                     if (cycleId !== this.currentCycleId) {
                         this.stopCompletionParticles();
@@ -1284,8 +1298,17 @@
                     const delta = Math.min(40, ts - previousTs);
                     previousTs = ts;
                     ctx.clearRect(0, 0, width, height);
+                    const elapsed = ts - startedAt;
 
-                    let hasAlive = false;
+                    if (elapsed < emissionDuration) {
+                        emissionCarry += emissionRatePerMs * delta;
+                        while (emissionCarry >= 1) {
+                            particles.push(spawnParticle());
+                            emissionCarry -= 1;
+                        }
+                    }
+
+                    let hasAlive = elapsed < emissionDuration;
                     for (const p of particles) {
                         p.age += delta;
                         if (p.age >= p.life) continue;
@@ -1293,7 +1316,8 @@
 
                         p.wobble += p.wobbleV * delta;
                         p.rot += p.rotV * delta;
-                        p.x += p.vx * delta + Math.sin(p.wobble) * 0.08 * delta;
+                        const wind = Math.sin((ts - startedAt) * 0.0012 + p.wobble * 0.4) * 0.05 + p.windBias;
+                        p.x += (p.vx + wind) * delta + Math.sin(p.wobble) * 0.08 * delta;
                         p.y += p.vy * delta;
                         p.vy += 0.00006 * delta;
 
@@ -1303,14 +1327,15 @@
                         const h = p.h * (0.75 + 0.35 * Math.sin(p.wobble * 1.8));
                         const fill = p.isAccent ? guessAccentColor : particleColor;
                         const glow = p.isAccent ? guessAccentColor : particleGlow;
+                        const burstBoost = elapsed < 700 ? 1.18 : 1;
 
                         ctx.save();
                         ctx.translate(p.x, p.y);
                         ctx.rotate(p.rot);
-                        ctx.globalAlpha = alpha * 0.9;
+                        ctx.globalAlpha = Math.min(1, alpha * 0.9 * burstBoost);
                         ctx.fillStyle = fill;
                         ctx.fillRect(-w / 2, -h / 2, w, h);
-                        ctx.globalAlpha = alpha * (p.isAccent ? 0.22 : 0.32);
+                        ctx.globalAlpha = Math.min(1, alpha * (p.isAccent ? 0.22 : 0.32) * burstBoost);
                         ctx.fillStyle = glow;
                         ctx.fillRect(-w * 0.75, -h * 0.75, w * 1.5, h * 1.5);
                         ctx.restore();
