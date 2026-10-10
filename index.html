@@ -197,6 +197,7 @@
         .theme-btn {
             width: 26px;
             height: 26px;
+            padding: 0;
             border-radius: 50%;
             border: 2px solid #888;
             cursor: pointer;
@@ -204,6 +205,10 @@
         }
 
         .theme-btn:hover { transform: scale(1.15); }
+        .theme-btn:focus-visible {
+            outline: 2px solid var(--text-solved);
+            outline-offset: 4px;
+        }
         .theme-btn.active { 
             border-color: var(--text-solved);
             box-shadow: 0 0 12px var(--text-solved);
@@ -422,10 +427,10 @@
             </div>
 
             <div id="theme-selector">
-                <div class="theme-btn theme-light-btn active" data-theme="light" title="Light"></div>
-                <div class="theme-btn theme-dark-btn" data-theme="dark" title="Dark"></div>
-                <div class="theme-btn theme-sepia-btn" data-theme="sepia" title="Sepia"></div>
-                <div class="theme-btn theme-neon-btn" data-theme="neon" title="Neon"></div>
+                <button type="button" class="theme-btn theme-light-btn active" data-theme="light" title="Light" aria-label="Light theme" aria-pressed="true"></button>
+                <button type="button" class="theme-btn theme-dark-btn" data-theme="dark" title="Dark" aria-label="Dark theme" aria-pressed="false"></button>
+                <button type="button" class="theme-btn theme-sepia-btn" data-theme="sepia" title="Sepia" aria-label="Sepia theme" aria-pressed="false"></button>
+                <button type="button" class="theme-btn theme-neon-btn" data-theme="neon" title="Neon" aria-label="Neon theme" aria-pressed="false"></button>
             </div>
         </div>
 
@@ -557,6 +562,7 @@
                 themeButtons.forEach(btn => {
                     const isActive = btn.getAttribute('data-theme') === theme;
                     btn.classList.toggle('active', isActive);
+                    btn.setAttribute('aria-pressed', String(isActive));
                 });
 
                 const savedTickRaw = this.getSavedPreference(STORAGE_KEYS.tickRate);
@@ -619,8 +625,11 @@
                         const theme = btn.getAttribute('data-theme');
                         document.body.className = `theme-${theme}`;
                         this.savePreference(STORAGE_KEYS.theme, theme);
-                        themeButtons.forEach(b => b.classList.remove('active'));
-                        btn.classList.add('active');
+                        themeButtons.forEach(b => {
+                            const isActive = b === btn;
+                            b.classList.toggle('active', isActive);
+                            b.setAttribute('aria-pressed', String(isActive));
+                        });
                     });
                 });
             },
@@ -636,6 +645,7 @@
 
             async restart() {
                 this.currentCycleId++;
+                const cycleId = this.currentCycleId;
                 history = [];
                 this.focusR = 0;
                 this.focusC = 0;
@@ -643,7 +653,7 @@
                 this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                 
                 boardContainer.classList.add('fade-out');
-                await this.sleep(0, this.currentCycleId);
+                if (!await this.sleep(0, cycleId)) return;
                 
                 this.createDOM();
                 this.startCycle();
@@ -822,7 +832,7 @@
                     if (cycleId === this.currentCycleId) {
                         this.setStatus(STATUS_MESSAGES.generatingBoard(this.difficulty), "--text-solved");
                         boardContainer.classList.add('fade-out');
-                        await this.sleep(0, cycleId);
+                        if (!await this.sleep(0, cycleId)) break;
                         this.createDOM();
                         shouldFadeIn = true;
                     }
@@ -1033,7 +1043,7 @@
                         if (action.reason === 'EMPTY_MEMO') {
                             this.setStatus("⚠️ Action: CONTRADICTION (EMPTY_MEMO) -> retry", "--text-error");
                         }
-                        if (!await this.backtrack(action.cell, cycleId)) return true;
+                        if (!await this.backtrack(action.cell, cycleId)) return false;
                     } else if (action.type === 'GUESS') {
                         this.cycleGuessCount++;
                         if (action.reason === 'MIN_CANDIDATE_GUESS') {
@@ -1111,7 +1121,7 @@
                         backtrackCount: this.cycleBacktrackCount
                     });
                     this.setStatus(STATUS_MESSAGES.solvingFailedRegenerating);
-                    await this.sleep(1500, cycleId);
+                    if (!await this.sleep(1500, cycleId)) return false;
                     await this.restart();
                     return false;
                 }
@@ -1126,7 +1136,7 @@
                         historyDepth: 0
                     });
                     this.setStatus(STATUS_MESSAGES.solvingFailedRegenerating);
-                    await this.sleep(1500, cycleId);
+                    if (!await this.sleep(1500, cycleId)) return false;
                     await this.restart();
                     return false;
                 }
@@ -1146,8 +1156,7 @@
                 this.updateDisplay();
                 if (!await this.moveTo(targetCell.r, targetCell.c, cycleId)) return false;
                 this.flashUnit([targetCell.dom]); 
-                await this.sleep(600, cycleId);
-                return true;
+                return await this.sleep(600, cycleId);
             },
 
             async confirmCell(cell, val, isGuess) {
